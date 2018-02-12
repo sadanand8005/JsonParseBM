@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace JsonParseBM
 {
@@ -48,7 +46,8 @@ namespace JsonParseBM
             JsonSerializer serializer = new JsonSerializer();
 
             watch.Start();
-            
+
+            var _dict = new Dictionary<string, SimpleObjectList>();
 
             using (var reader = new JsonTextReader(new StreamReader(file)))
             {
@@ -57,9 +56,27 @@ namespace JsonParseBM
                     if (reader.TokenType == JsonToken.StartObject)
                     {
                         var obj = serializer.Deserialize<SimpleObject>(reader);
+
+                        SimpleObjectList _obj = null;
+
+                        if (_dict.TryGetValue(obj.Name, out _obj))
+                        {
+                            _obj.List.Add(obj);
+                            _obj.Total += obj.Count;
+                        }
+                        else
+                        {
+                            _obj = new SimpleObjectList(obj.Name, obj.Count);
+                            _obj.List.Add(obj);
+                            _dict[obj.Name] = _obj;
+                        }
                     }
                 }
             }
+
+            var orderedList = _dict.Values.OrderByDescending(e => e.Total);
+
+            var selectedList = orderedList.Take(10);
 
             watch.Stop();
 
